@@ -64,11 +64,8 @@ public class GenerationService {
                 + startUtc.format(API_FORMATTER) + "/" + endUtc.format(API_FORMATTER);
 
         try {
-            GenerationResponse response = restTemplate.getForObject(url, GenerationResponse.class);
-            if (response == null || response.data().isEmpty()) {
-                throw new NoGenerationFoundExcepion("No generation data found for the requested period.");
-            }
-            return response;
+            return Optional.ofNullable(restTemplate.getForObject(url, GenerationResponse.class))
+                    .orElseThrow(() -> new NoGenerationFoundExcepion("No generation data found for the requested period."));
         } catch (RestClientException ex) {
             throw new GenerationProviderConnectionException("Failed to fetch data from CarbonIntensity API", ex);
         }
