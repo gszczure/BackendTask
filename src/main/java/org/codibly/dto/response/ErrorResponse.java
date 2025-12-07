@@ -8,7 +8,7 @@ public record ErrorResponse(
 
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyy-MM-dd'T'HH:mm:ss")
         ZonedDateTime timestamp,
-        int staus,
+        int status,
         String errorMessage,
         String message,
         String path

@@ -14,10 +14,10 @@ import java.time.ZonedDateTime;
 
 @Slf4j
 @RestControllerAdvice
-public class GenerationProviderExceptionHandler {
+class GenerationProviderExceptionHandler {
 
     @ExceptionHandler(GenerationProviderConnectionException.class)
-    public ResponseEntity<ErrorResponse> handleConnectionException(GenerationProviderConnectionException ex,
+    private ResponseEntity<ErrorResponse> handleConnectionException(GenerationProviderConnectionException ex,
                                                                          HttpServletRequest request) {
         log.warn("Warn occurred: {}", ex.getMessage(), ex);
         ErrorResponse errorResponse = buildErrorResponse(
@@ -31,7 +31,7 @@ public class GenerationProviderExceptionHandler {
     }
 
     @ExceptionHandler(NoGenerationFoundExcepion.class)
-    public ResponseEntity<ErrorResponse> handleNoGenerationFound(NoGenerationFoundExcepion ex,
+    private ResponseEntity<ErrorResponse> handleNoGenerationFound(NoGenerationFoundExcepion ex,
                                                                  HttpServletRequest request) {
         log.warn("No generation data found: {}", ex.getMessage(), ex);
         ErrorResponse errorResponse = buildErrorResponse(
