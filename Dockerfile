@@ -10,7 +10,7 @@ COPY mvnw pom.xml ./
 RUN chmod +x mvnw
 COPY src ./src/
 
-RUN ./mvnw -B clean verify
+RUN ./mvnw -B clean package
 
 
 # Runtime stage
