@@ -3,9 +3,12 @@ package org.codibly.service;
 import org.codibly.dto.response.DailyGenerationResponse;
 import org.codibly.dto.response.GenerationResponse;
 import org.codibly.dto.response.GenerationResponse.GenerationEntry;
+import org.codibly.exception.GenerationProviderConnectionException;
+import org.codibly.exception.NoGenerationFoundExcepion;
 import org.codibly.model.EnergySource;
 import org.codibly.time.TimeProvider;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.OffsetDateTime;
@@ -43,9 +46,16 @@ public class GenerationService {
 
         String url = "https://api.carbonintensity.org.uk/generation/"
                 + startUtc.format(API_FORMATTER) + "/" + endUtc.format(API_FORMATTER);
-        GenerationResponse response = restTemplate.getForObject(url, GenerationResponse.class);
 
-        return response != null ? response : new GenerationResponse(Collections.emptyList());
+        try {
+            GenerationResponse response = restTemplate.getForObject(url, GenerationResponse.class);
+            if (response == null || response.data().isEmpty()) {
+                throw new NoGenerationFoundExcepion("No generation data found for the requested period.");
+            }
+            return response;
+        } catch (RestClientException ex) {
+            throw new GenerationProviderConnectionException("Failed to fetch data from CarbonIntensity API");
+        }
     }
 
     private Map<String, List<GenerationEntry>> groupEntriesByDate(GenerationResponse response) {
