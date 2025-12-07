@@ -1,7 +1,7 @@
 package org.codibly.externalClient;
 
 import org.codibly.dto.response.GenerationResponse;
-import org.springframework.cloud.netflix.feign.FeignClient;
+import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
@@ -13,7 +13,8 @@ public interface CarbonIntensityClient {
 
     @GetMapping("/generation/{from}/{to}")
     GenerationResponse getGenerationMix(
-            @PathVariable String from,
-            @PathVariable String to
+            @PathVariable(value = "from") String from,
+            @PathVariable(value = "to") String to
     );
+// TODO: Naprawic encoded w feign (encoded = true, nie dziala)
 }
