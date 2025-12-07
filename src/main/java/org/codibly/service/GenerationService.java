@@ -16,6 +16,7 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class GenerationService {
@@ -95,7 +96,9 @@ public class GenerationService {
                 .map(entry -> {
                     String day = entry.getKey();
                     Map<String, Double> avgMix = calculateAverageMix(entry.getValue());
-                    double cleanPerc = avgMix.values().stream().mapToDouble(Double::doubleValue).sum();
+                    double cleanPerc = avgMix.values().stream()
+                            .mapToDouble(Double::doubleValue)
+                            .sum();
                     return new DailyGenerationResponse(day, avgMix, cleanPerc);
                 })
                 .sorted(Comparator.comparing(DailyGenerationResponse::date))
@@ -113,9 +116,7 @@ public class GenerationService {
         int count = entries.size();
 
         return entries.stream()
-                .flatMap(entry -> entry.generationmix().stream())
-                .filter(f -> Arrays.stream(EnergySource.values())
-                        .anyMatch(es -> es.getFuelName().equals(f.fuel())))
+                .flatMap(this::cleanEnergyStream)
                 .collect(Collectors.groupingBy(
                         GenerationEntry.FuelMix::fuel,
                         Collectors.summingDouble(GenerationEntry.FuelMix::perc)
@@ -155,9 +156,7 @@ public class GenerationService {
         for (int i = 0; i <= entries.size() - windowSize; i++) {
             List<GenerationEntry> windowEntries = entries.subList(i, i + windowSize);
             double avgClean = windowEntries.stream()
-                    .flatMap(e -> e.generationmix().stream())
-                    .filter(f -> Arrays.stream(EnergySource.values())
-                            .anyMatch(es -> es.getFuelName().equals(f.fuel())))
+                    .flatMap(this::cleanEnergyStream)
                     .mapToDouble(GenerationEntry.FuelMix::perc)
                     .average()
                     .orElse(0.0);
@@ -176,5 +175,11 @@ public class GenerationService {
                 endEntry.to().toOffsetDateTime(),
                 maxAverage
         );
+    }
+
+    private Stream<GenerationEntry.FuelMix> cleanEnergyStream(GenerationEntry entry) {
+        return entry.generationmix().stream()
+                .filter(f -> Arrays.stream(EnergySource.values())
+                        .anyMatch(es -> es.getFuelName().equals(f.fuel())));
     }
 }
