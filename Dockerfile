@@ -7,6 +7,7 @@ WORKDIR /app
 
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
+RUN chmod +x mvnw
 COPY src ./src/
 
 RUN ./mvnw -B clean verify
