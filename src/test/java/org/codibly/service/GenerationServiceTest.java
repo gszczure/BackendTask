@@ -4,6 +4,7 @@ import org.codibly.dto.response.DailyGenerationResponse;
 import org.codibly.dto.response.GenerationResponse;
 import org.codibly.dto.response.GenerationResponse.GenerationEntry;
 import org.codibly.dto.response.GenerationResponse.GenerationEntry.FuelMix;
+import org.codibly.dto.response.OptimalChargingWindowResponse;
 import org.codibly.exception.GenerationProviderConnectionException;
 import org.codibly.exception.NoGenerationFoundExcepion;
 import org.codibly.externalClient.CarbonIntensityClient;
@@ -78,8 +79,10 @@ class GenerationServiceTest {
 //        // given
 //        GenerationResponse mockResponse = mockGenerationResponse();
 //
-//        when(restTemplateMock.getForObject(anyString(), eq(GenerationResponse.class)))
+//        // zamiast restTemplate, mockujemy carbonIntensityClient
+//        when(carbonIntensityClient.getGenerationMix(anyString(), anyString()))
 //                .thenReturn(mockResponse);
+//
 //        when(timeProvider.getStartOfDay()).thenReturn(
 //                ZonedDateTime.parse("2025-01-01T00:00Z"));
 //        when(timeProvider.getEndOfDay()).thenReturn(
@@ -89,11 +92,11 @@ class GenerationServiceTest {
 //        OptimalChargingWindowResponse result = generationService.findOptimalChargingWindow(3);
 //
 //        // then
-//        assertThat(result.start()).isEqualTo("2025-01-02T00:00Z");
-//        assertThat(result.end()).isEqualTo("2025-01-03T01:30Z");
+//        assertThat(result.start()).isEqualTo(ZonedDateTime.parse("2025-01-02T00:00Z"));
+//        assertThat(result.end()).isEqualTo(ZonedDateTime.parse("2025-01-03T01:30Z"));
 //        assertThat(result.averageCleanEnergyPercentage()).isEqualTo(53.333333333333336);
 //
-//        verify(restTemplateMock).getForObject(anyString(), eq(GenerationResponse.class));
+//        verify(carbonIntensityClient).getGenerationMix(anyString(), anyString());
 //        verify(timeProvider).getStartOfDay();
 //        verify(timeProvider).getEndOfDay();
 //    }
