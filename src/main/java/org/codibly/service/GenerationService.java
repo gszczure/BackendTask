@@ -95,21 +95,22 @@ public class GenerationService {
     }
 
     /**
-     * Calculates daily averages for the grouped generation entries,
-     * including the average share of each energy source and the total clean energy percentage.
+     * Calculates daily averages for the grouped generation entries.
+     * For each day, it computes:
+     *  - the average share of each energy source (all sources),
+     *  - the total clean energy percentage (sum of biomass, nuclear, hydro, wind, solar).
      *
-     * @param grouped map of entries grouped by date
-     * @return list of DTOs containing daily averages
+     * @param grouped map of generation entries grouped by date
+     * @return list of DTOs containing daily averages with clean energy percentage
      */
+
     private List<DailyGenerationResponse> calculateDailyAverages(Map<String, List<GenerationEntry>> grouped) {
         return grouped.entrySet().stream()
                 //TODO: zastanowić sie nam mappowaniem w package mapper
                 .map(entry -> {
                     String day = entry.getKey();
                     Map<String, Double> avgMix = calculateAverageMix(entry.getValue());
-                    double cleanPerc = avgMix.values().stream()
-                            .mapToDouble(Double::doubleValue)
-                            .sum();
+                    double cleanPerc = calculateCleanEnergy(avgMix);
                     return new DailyGenerationResponse(day, avgMix, cleanPerc);
                 })
                 .sorted(Comparator.comparing(DailyGenerationResponse::date))
@@ -117,17 +118,17 @@ public class GenerationService {
     }
 
     /**
-     * Calculates the average share of clean energy sources (biomass, nuclear, hydro, wind, solar)
-     * for a list of generation entries.
+     * Calculates the average share of each energy source for a list of generation entries.
      *
      * @param entries list of generation entries
      * @return a map where the key is the energy source and the value is the average percentage
      */
+
     private Map<String, Double> calculateAverageMix(List<GenerationEntry> entries) {
         int count = entries.size();
 
         return entries.stream()
-                .flatMap(this::cleanEnergyStream)
+                .flatMap(e -> e.generationmix().stream())
                 .collect(Collectors.groupingBy(
                         GenerationEntry.FuelMix::fuel,
                         Collectors.summingDouble(GenerationEntry.FuelMix::perc)
@@ -137,6 +138,14 @@ public class GenerationService {
                         Map.Entry::getKey,
                         e -> e.getValue() / count
                 ));
+    }
+
+    private double calculateCleanEnergy(Map<String, Double> avgMix) {
+        return avgMix.entrySet().stream()
+                .filter(e -> Arrays.stream(EnergySource.values())
+                        .anyMatch(es -> es.getFuelName().equals(e.getKey())))
+                .mapToDouble(Map.Entry::getValue)
+                .sum();
     }
 
     /**
