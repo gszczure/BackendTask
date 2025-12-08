@@ -10,7 +10,7 @@ COPY mvnw pom.xml ./
 RUN chmod +x mvnw
 COPY src ./src/
 
-RUN ./mvnw -B clean package
+RUN ./mvnw -B clean verify -Pskip-integration-tests
 
 
 # Runtime stage
