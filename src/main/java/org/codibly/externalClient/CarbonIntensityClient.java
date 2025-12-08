@@ -7,7 +7,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @FeignClient(
         name = "carbonIntensityClient",
-        url = "https://api.carbonintensity.org.uk"
+        url = "https://api.carbonintensity.org.uk",
+        configuration = org.codibly.config.FeignConfig.class
 )
 public interface CarbonIntensityClient {
 
@@ -16,5 +17,4 @@ public interface CarbonIntensityClient {
             @PathVariable(value = "from") String from,
             @PathVariable(value = "to") String to
     );
-// TODO: Naprawic encoded w feign (encoded = true, nie dziala)
 }

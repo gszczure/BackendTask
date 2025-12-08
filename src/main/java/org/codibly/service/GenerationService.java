@@ -6,11 +6,11 @@ import org.codibly.dto.response.GenerationResponse.GenerationEntry;
 import org.codibly.dto.response.OptimalChargingWindowResponse;
 import org.codibly.exception.GenerationProviderConnectionException;
 import org.codibly.exception.NoGenerationFoundExcepion;
+import org.codibly.externalClient.CarbonIntensityClient;
 import org.codibly.model.EnergySource;
 import org.codibly.time.TimeProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -21,8 +21,9 @@ import java.util.stream.Stream;
 @Service
 public class GenerationService {
 
-    private final RestTemplate restTemplate = new RestTemplate();
     private final TimeProvider timeProvider;
+
+    private final CarbonIntensityClient carbonIntensityClient;
 
     private static final DateTimeFormatter API_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm'Z'");
@@ -30,8 +31,9 @@ public class GenerationService {
     private static final DateTimeFormatter DAY_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    public GenerationService(TimeProvider timeProvider) {
+    public GenerationService(TimeProvider timeProvider, CarbonIntensityClient carbonIntensityClient) {
         this.timeProvider = timeProvider;
+        this.carbonIntensityClient = carbonIntensityClient;
     }
 
     /**
@@ -56,21 +58,22 @@ public class GenerationService {
      * @throws NoGenerationFoundExcepion if no data is found in the API response
      * @throws GenerationProviderConnectionException if there is a connection issue with the API
      */
-    //TODO przeniesc to do CarbonIntensityClient
     private GenerationResponse fetchGenerationData(int startDayOffset, int numberOfDays) {
         ZonedDateTime startUtc = timeProvider.getStartOfDay().plusDays(startDayOffset);
         ZonedDateTime endUtc = timeProvider.getEndOfDay().plusDays(startDayOffset + numberOfDays - 1);
 
-        String url = "https://api.carbonintensity.org.uk/generation/"
-                + startUtc.format(API_FORMATTER) + "/" + endUtc.format(API_FORMATTER);
-
         try {
-            GenerationResponse raw = Optional.ofNullable(restTemplate.getForObject(url, GenerationResponse.class))
-                    .orElseThrow(() -> new NoGenerationFoundExcepion("No generation data found for the requested period."));
+            GenerationResponse raw = Optional.ofNullable(
+                    carbonIntensityClient.getGenerationMix(
+                            startUtc.format(API_FORMATTER),
+                            endUtc.format(API_FORMATTER)
+                    )
+            ).orElseThrow(() -> new NoGenerationFoundExcepion("No generation data found for the requested period."));
 
+            // TODO zmienic to bo testy nie dzialaja
             List<GenerationEntry> filtered = raw.data().stream()
                     .filter(e -> !e.from().isBefore(startUtc))
-                    .filter(e -> e.to().isBefore(endUtc))
+                    .filter(e -> !e.to().isAfter(endUtc))
                     .toList();
 
             return new GenerationResponse(filtered);
