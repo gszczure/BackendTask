@@ -1,8 +1,15 @@
 package org.codibly.time;
 
+import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.util.function.Supplier;
 
-@FunctionalInterface
-public interface TimeProvider extends Supplier<ZonedDateTime> {
+public interface TimeProvider {
+
+    ZonedDateTime getZonedDateTime();
+
+    LocalDate getLocalDate();
+
+    ZonedDateTime getStartOfDay();
+
+    ZonedDateTime getEndOfDay();
 }

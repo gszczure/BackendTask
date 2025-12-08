@@ -3,6 +3,8 @@ package org.codibly.time;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 @Component
@@ -19,7 +21,22 @@ public class SystemTimeProvider implements TimeProvider {
     }
 
     @Override
-    public ZonedDateTime get() {
+    public ZonedDateTime getZonedDateTime() {
         return ZonedDateTime.now(clock);
+    }
+
+    @Override
+    public LocalDate getLocalDate() {
+        return LocalDate.now(clock);
+    }
+
+    @Override
+    public ZonedDateTime getStartOfDay() {
+        return getLocalDate().atStartOfDay().atZone(ZoneOffset.UTC);
+    }
+
+    @Override
+    public ZonedDateTime getEndOfDay() {
+        return getStartOfDay().plusDays(1);
     }
 }

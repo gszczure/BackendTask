@@ -42,7 +42,7 @@ public class GenerationService {
      * @return a list of DTOs containing the daily averages
      */
     public List<DailyGenerationResponse> getThreeDaysAverage() {
-        GenerationResponse response = fetchGenerationData(3);
+        GenerationResponse response = fetchGenerationData(0,3);
         Map<String, List<GenerationEntry>> grouped = groupEntriesByDate(response);
 
         return calculateDailyAverages(grouped);
@@ -51,22 +51,30 @@ public class GenerationService {
     /**
      * Fetches generation data from the Carbon Intensity API for a given number of days.
      *
-     * @param days number of days to fetch forecast data for
+     * @param numberOfDays  number of days to fetch forecast data for
      * @return API response containing a list of generation entries
      * @throws NoGenerationFoundExcepion if no data is found in the API response
      * @throws GenerationProviderConnectionException if there is a connection issue with the API
      */
     //TODO przeniesc to do CarbonIntensityClient
-    private GenerationResponse fetchGenerationData(int days) {
-        ZonedDateTime startUtc = timeProvider.get();
-        ZonedDateTime endUtc = startUtc.plusDays(days);
+    private GenerationResponse fetchGenerationData(int startDayOffset, int numberOfDays) {
+        ZonedDateTime startUtc = timeProvider.getStartOfDay().plusDays(startDayOffset);
+        ZonedDateTime endUtc = timeProvider.getEndOfDay().plusDays(startDayOffset + numberOfDays - 1);
 
         String url = "https://api.carbonintensity.org.uk/generation/"
                 + startUtc.format(API_FORMATTER) + "/" + endUtc.format(API_FORMATTER);
 
         try {
-            return Optional.ofNullable(restTemplate.getForObject(url, GenerationResponse.class))
+            GenerationResponse raw = Optional.ofNullable(restTemplate.getForObject(url, GenerationResponse.class))
                     .orElseThrow(() -> new NoGenerationFoundExcepion("No generation data found for the requested period."));
+
+            List<GenerationEntry> filtered = raw.data().stream()
+                    .filter(e -> !e.from().isBefore(startUtc))
+                    .filter(e -> e.to().isBefore(endUtc))
+                    .toList();
+
+            return new GenerationResponse(filtered);
+
         } catch (RestClientException ex) {
             throw new GenerationProviderConnectionException("Failed to fetch data from CarbonIntensity API", ex);
         }
@@ -142,7 +150,7 @@ public class GenerationService {
             throw new IllegalArgumentException("Charging window length must be between 1 and 6 hours");
         }
 
-        GenerationResponse response = fetchGenerationData(2);
+        GenerationResponse response = fetchGenerationData(1, 2);
         List<GenerationEntry> entries = response.data();
 
         int windowSize = hours * 2;
