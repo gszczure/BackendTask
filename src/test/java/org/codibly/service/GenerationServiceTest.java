@@ -4,12 +4,11 @@ import org.codibly.dto.response.DailyGenerationResponse;
 import org.codibly.dto.response.GenerationResponse;
 import org.codibly.dto.response.GenerationResponse.GenerationEntry;
 import org.codibly.dto.response.GenerationResponse.GenerationEntry.FuelMix;
-import org.codibly.dto.response.OptimalChargingWindowResponse;
 import org.codibly.exception.GenerationProviderConnectionException;
 import org.codibly.exception.NoGenerationFoundExcepion;
+import org.codibly.externalClient.CarbonIntensityClient;
 import org.codibly.model.EnergySource;
 import org.codibly.time.TimeProvider;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,9 +17,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -37,15 +34,15 @@ class GenerationServiceTest {
     private TimeProvider timeProvider;
 
     @Mock
-    private RestTemplate restTemplateMock;
+    private CarbonIntensityClient carbonIntensityClient;
 
     @InjectMocks
     private GenerationService generationService;
 
-    @BeforeEach
-    void setup() {
-        ReflectionTestUtils.setField(generationService, "restTemplate", restTemplateMock);
-    }
+//    @BeforeEach
+//    void setup() {
+//        ReflectionTestUtils.setField(generationService, "restTemplate", restTemplateMock);
+//    }
 
 //    @Test
 //    @DisplayName("Should find optimal charging window for 1-hour window")
@@ -117,7 +114,7 @@ class GenerationServiceTest {
         // given
         GenerationResponse resp = mockThreeDaysResponse();
 
-        when(restTemplateMock.getForObject(anyString(), eq(GenerationResponse.class)))
+        when(carbonIntensityClient.getGenerationMix(anyString(), anyString()))
                 .thenReturn(resp);
         when(timeProvider.getStartOfDay()).thenReturn(
                 ZonedDateTime.parse("2025-01-01T00:00Z"));
@@ -142,7 +139,6 @@ class GenerationServiceTest {
         assertThat(day3.date()).isEqualTo("2025-01-03");
         assertThat(day3.cleanEnergyPerc()).isEqualTo(18);
 
-        verify(restTemplateMock).getForObject(anyString(), eq(GenerationResponse.class));
         verify(timeProvider).getStartOfDay();
         verify(timeProvider).getEndOfDay();
     }
@@ -151,7 +147,7 @@ class GenerationServiceTest {
     @DisplayName("Should throw NoGenerationFoundExcepion when API returns no data")
     void fetchGenerationData_NoData_ShouldThrow_NoGenerationFoundExcepion() {
         // given
-        when(restTemplateMock.getForObject(anyString(), eq(GenerationResponse.class)))
+        when(carbonIntensityClient.getGenerationMix(anyString(), anyString()))
                 .thenReturn(null);
         when(timeProvider.getStartOfDay())
                 .thenReturn(ZonedDateTime.parse("2025-01-01T00:00Z"));
@@ -168,7 +164,7 @@ class GenerationServiceTest {
     @DisplayName("Should throw GenerationProviderConnectionException when API fails")
     void fetchGenerationData_ApiFails_ShouldThrow_GenerationProviderConnectionException() {
         // given
-        when(restTemplateMock.getForObject(anyString(), eq(GenerationResponse.class)))
+        when(carbonIntensityClient.getGenerationMix(anyString(), anyString()))
                 .thenThrow(new RestClientException("API down"));
         when(timeProvider.getStartOfDay())
                 .thenReturn(ZonedDateTime.parse("2025-01-01T00:00Z"));
