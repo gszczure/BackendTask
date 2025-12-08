@@ -1,9 +1,9 @@
 package org.codibly.dto.response;
 
-import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 
 public record OptimalChargingWindowResponse(
-        OffsetDateTime start,
-        OffsetDateTime end,
+        ZonedDateTime start,
+        ZonedDateTime end,
         double averageCleanEnergyPercentage
 ) {}

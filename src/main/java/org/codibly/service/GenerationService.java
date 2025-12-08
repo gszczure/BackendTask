@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -58,8 +58,8 @@ public class GenerationService {
      */
     //TODO przeniesc to do CarbonIntensityClient
     private GenerationResponse fetchGenerationData(int days) {
-        OffsetDateTime startUtc = timeProvider.get().toOffsetDateTime();
-        OffsetDateTime endUtc = startUtc.plusDays(days);
+        ZonedDateTime startUtc = timeProvider.get();
+        ZonedDateTime endUtc = startUtc.plusDays(days);
 
         String url = "https://api.carbonintensity.org.uk/generation/"
                 + startUtc.format(API_FORMATTER) + "/" + endUtc.format(API_FORMATTER);
@@ -172,8 +172,8 @@ public class GenerationService {
         GenerationEntry endEntry = entries.get(bestStartIndex + windowSize - 1);
 
         return new OptimalChargingWindowResponse(
-                startEntry.from().toOffsetDateTime(), // TODO: ujednolicić typ daty
-                endEntry.to().toOffsetDateTime(),
+                startEntry.from(),
+                endEntry.to(),
                 maxAverage
         );
     }
