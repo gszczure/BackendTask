@@ -40,66 +40,58 @@ class GenerationServiceTest {
     @InjectMocks
     private GenerationService generationService;
 
-//    @BeforeEach
-//    void setup() {
-//        ReflectionTestUtils.setField(generationService, "restTemplate", restTemplateMock);
-//    }
+    @Test
+    @DisplayName("Should find optimal charging window for 1-hour window")
+    void findOptimalChargingWindow_for_1HourWindow() {
+        // given
+        GenerationResponse mockResponse = mockGenerationResponse();
 
-//    @Test
-//    @DisplayName("Should find optimal charging window for 1-hour window")
-//    void findOptimalChargingWindow_For_1HourWindow() {
-//        // given
-//        GenerationResponse mockResponse = mockGenerationResponse();
-//
-//        when(restTemplateMock.getForObject(anyString(), eq(GenerationResponse.class)))
-//                .thenReturn(mockResponse);
-//        when(timeProvider.getStartOfDay())
-//                .thenReturn(ZonedDateTime.parse("2025-01-01T00:00Z"));
-//        when(timeProvider.getEndOfDay())
-//                .thenReturn(ZonedDateTime.parse("2025-01-04T00:00Z"));
-//
-//        // when
-//        OptimalChargingWindowResponse result = generationService.findOptimalChargingWindow(1);
-//
-//        // then
-//        GenerationEntry bestStart = mockResponse.data().get(2);
-//        GenerationEntry bestEnd = mockResponse.data().get(3);
-//
-//        assertThat(result.start()).isEqualTo(bestStart.from());
-//        assertThat(result.end()).isEqualTo(bestEnd.to());
-//        assertThat(result.averageCleanEnergyPercentage()).isEqualTo(85);
-//
-//        verify(restTemplateMock).getForObject(anyString(), eq(GenerationResponse.class));
-//    }
-// TODO fix test
+        when(carbonIntensityClient.getGenerationMix(anyString(), anyString()))
+                .thenReturn(mockResponse);
+        when(timeProvider.getStartOfDay()).thenReturn(
+                ZonedDateTime.parse("2025-01-01T00:00Z"));
+        when(timeProvider.getEndOfDay()).thenReturn(
+                ZonedDateTime.parse("2025-01-04T00:00Z"));
 
-//    @Test
-//    @DisplayName("Should find optimal 3-hour charging window")
-//    void findOptimalChargingWindow__For3hour() {
-//        // given
-//        GenerationResponse mockResponse = mockGenerationResponse();
-//
-//        // zamiast restTemplate, mockujemy carbonIntensityClient
-//        when(carbonIntensityClient.getGenerationMix(anyString(), anyString()))
-//                .thenReturn(mockResponse);
-//
-//        when(timeProvider.getStartOfDay()).thenReturn(
-//                ZonedDateTime.parse("2025-01-01T00:00Z"));
-//        when(timeProvider.getEndOfDay()).thenReturn(
-//                ZonedDateTime.parse("2025-01-04T00:00Z"));
-//
-//        // when
-//        OptimalChargingWindowResponse result = generationService.findOptimalChargingWindow(3);
-//
-//        // then
-//        assertThat(result.start()).isEqualTo(ZonedDateTime.parse("2025-01-02T00:00Z"));
-//        assertThat(result.end()).isEqualTo(ZonedDateTime.parse("2025-01-03T01:30Z"));
-//        assertThat(result.averageCleanEnergyPercentage()).isEqualTo(53.333333333333336);
-//
-//        verify(carbonIntensityClient).getGenerationMix(anyString(), anyString());
-//        verify(timeProvider).getStartOfDay();
-//        verify(timeProvider).getEndOfDay();
-//    }
+        // when
+        OptimalChargingWindowResponse result = generationService.findOptimalChargingWindow(1);
+
+        // then
+        assertThat(result.start()).isEqualTo(ZonedDateTime.parse("2025-01-03T00:00Z"));
+        assertThat(result.end()).isEqualTo(ZonedDateTime.parse("2025-01-03T01:00Z"));
+        assertThat(result.averageCleanEnergyPercentage()).isEqualTo(100);
+
+        verify(carbonIntensityClient).getGenerationMix(anyString(), anyString());
+        verify(timeProvider).getStartOfDay();
+        verify(timeProvider).getEndOfDay();
+    }
+
+    @Test
+    @DisplayName("Should find optimal charging window for 3-hour window")
+    void findOptimalChargingWindow_for_3HourWindow() {
+        // given
+        GenerationResponse mockResponse = mockGenerationResponse();
+
+        when(carbonIntensityClient.getGenerationMix(anyString(), anyString()))
+                .thenReturn(mockResponse);
+
+        when(timeProvider.getStartOfDay()).thenReturn(
+                ZonedDateTime.parse("2025-01-01T00:00Z"));
+        when(timeProvider.getEndOfDay()).thenReturn(
+                ZonedDateTime.parse("2025-01-04T00:00Z"));
+
+        // when
+        OptimalChargingWindowResponse result = generationService.findOptimalChargingWindow(3);
+
+        // then
+        assertThat(result.start()).isEqualTo(ZonedDateTime.parse("2025-01-02T00:00Z"));
+        assertThat(result.end()).isEqualTo(ZonedDateTime.parse("2025-01-03T01:30Z"));
+        assertThat(result.averageCleanEnergyPercentage()).isEqualTo(70);
+
+        verify(carbonIntensityClient).getGenerationMix(anyString(), anyString());
+        verify(timeProvider).getStartOfDay();
+        verify(timeProvider).getEndOfDay();
+    }
 
     @ParameterizedTest
     @ValueSource(ints = {0, 7, 999, -1})
@@ -144,6 +136,7 @@ class GenerationServiceTest {
 
         verify(timeProvider).getStartOfDay();
         verify(timeProvider).getEndOfDay();
+        verify(carbonIntensityClient).getGenerationMix(anyString(), anyString());
     }
 
     @Test
@@ -161,6 +154,10 @@ class GenerationServiceTest {
         assertThatThrownBy(() -> generationService.getThreeDaysAverage())
                 .isInstanceOf(NoGenerationFoundExcepion.class)
                 .hasMessageContaining("No generation data found for the requested period");
+
+        verify(carbonIntensityClient).getGenerationMix(anyString(), anyString());
+        verify(timeProvider).getStartOfDay();
+        verify(timeProvider).getEndOfDay();
     }
 
     @Test
@@ -178,13 +175,17 @@ class GenerationServiceTest {
         assertThatThrownBy(() -> generationService.getThreeDaysAverage())
                 .isInstanceOf(GenerationProviderConnectionException.class)
                 .hasMessageContaining("Failed to fetch data from CarbonIntensity API");
+
+        verify(carbonIntensityClient).getGenerationMix(anyString(), anyString());
+        verify(timeProvider).getStartOfDay();
+        verify(timeProvider).getEndOfDay();
     }
 
     private GenerationResponse mockGenerationResponse() {
 
-        GenerationEntry today1 = createEntry("2025-01-01T23:00Z", "2025-01-01T23:30Z",
+        GenerationEntry d1e1TodayExcluded = createEntry("2025-01-01T23:00Z", "2025-01-01T23:30Z",
                 0.0, 999999.0, 0.0, 99999.0, 0.0);
-        GenerationEntry today2 = createEntry("2025-01-01T23:30Z", "2025-01-02T00:00Z",
+        GenerationEntry d1e2TodayExcluded = createEntry("2025-01-01T23:30Z", "2025-01-02T00:00Z",
                 0.0, 8099999.0, 0.0, 8099999.0, 0.0);
         GenerationEntry d2e1 = createEntry("2025-01-02T00:00Z", "2025-01-02T00:30Z",
                 0.0, 10.0, 0.0, 20.0, 0.0);
@@ -193,18 +194,20 @@ class GenerationServiceTest {
         GenerationEntry d2e3 = createEntry("2025-01-02T01:00Z", "2025-01-02T01:30Z",
                 0.0, 20.0, 0.0, 30.0, 0.0);
         GenerationEntry d3e1 = createEntry("2025-01-03T00:00Z", "2025-01-03T00:30Z",
-                0.0, 250., 0.0, 35.0, 0.0);
+                0.0, 60.0, 0.0, 40.0, 0.0);
         GenerationEntry d3e2 = createEntry("2025-01-03T00:30Z", "2025-01-03T01:00Z",
-                0.0, 30.0, 0.0, 40.0, 0.0);
+                0.0, 30.0, 0.0, 70.0, 0.0);
         GenerationEntry d3e3 = createEntry("2025-01-03T01:00Z", "2025-01-03T01:30Z",
-                0.0, 30.0, 0.0, 40.0, 0.0);
-        GenerationEntry d4e1 = createEntry("2025-01-04T00:00Z", "2025-01-04T00:30Z",
-                0.0, 30.0, 0.0, 40.0, 0.0);
+                0.0, 50.0, 0.0, 50.0, 0.0);
+        GenerationEntry day4OutOfRange = createEntry("2025-01-04T00:00Z", "2025-01-04T00:30Z",
+                0.0, 11.0, 0.0, 11.0, 0.0);
         GenerationEntry farFuture = createEntry("3000-01-01T00:00Z", "3000-01-01T01:00Z",
-                1111,0.0,0.0,0.0,0.0);
+                1111, 0.0, 0.0, 0.0, 0.0);
 
-
-        return new GenerationResponse(List.of(today1, today2, d2e1, d2e2, d2e3, d3e1, d3e2, d3e3, d4e1, farFuture));
+        return new GenerationResponse(List.of(
+                d1e1TodayExcluded, d1e2TodayExcluded, d2e1, d2e2, d2e3,
+                d3e1, d3e2, d3e3, day4OutOfRange, farFuture
+        ));
     }
 
     private GenerationResponse mockThreeDaysResponse() {

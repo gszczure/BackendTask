@@ -52,7 +52,6 @@ class GenerationControllerTest {
                 .andExpect(jsonPath("$[2].cleanEnergyPerc").value(18))
                 .andExpect(jsonPath("$[2].energyMix.solar").value(9.0))
                 .andExpect(jsonPath("$[2].energyMix.wind").value(9.0));
-
     }
 
     @Test

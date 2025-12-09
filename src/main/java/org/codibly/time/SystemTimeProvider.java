@@ -37,6 +37,6 @@ public class SystemTimeProvider implements TimeProvider {
 
     @Override
     public ZonedDateTime getEndOfDay() {
-        return getStartOfDay().plusDays(1);
+        return getStartOfDay();
     }
 }

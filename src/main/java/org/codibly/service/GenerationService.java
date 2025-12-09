@@ -60,7 +60,7 @@ public class GenerationService {
      */
     private GenerationResponse fetchGenerationData(int startDayOffset, int numberOfDays) {
         ZonedDateTime startUtc = timeProvider.getStartOfDay().plusDays(startDayOffset);
-        ZonedDateTime endUtc = timeProvider.getEndOfDay().plusDays(startDayOffset + numberOfDays - 1);
+        ZonedDateTime endUtc = timeProvider.getEndOfDay().plusDays(startDayOffset + numberOfDays);
 
         try {
             GenerationResponse raw = Optional.ofNullable(
@@ -70,7 +70,6 @@ public class GenerationService {
                     )
             ).orElseThrow(() -> new NoGenerationFoundExcepion("No generation data found for the requested period."));
 
-            // TODO zmienic to bo testy nie dzialaja
             List<GenerationEntry> filtered = raw.data().stream()
                     .filter(e -> !e.from().isBefore(startUtc))
                     .filter(e -> !e.to().isAfter(endUtc))
@@ -106,7 +105,6 @@ public class GenerationService {
 
     private List<DailyGenerationResponse> calculateDailyAverages(Map<String, List<GenerationEntry>> grouped) {
         return grouped.entrySet().stream()
-                //TODO: zastanowić sie nam mappowaniem w package mapper
                 .map(entry -> {
                     String day = entry.getKey();
                     Map<String, Double> avgMix = calculateAverageMix(entry.getValue());
@@ -123,23 +121,22 @@ public class GenerationService {
      * @param entries list of generation entries
      * @return a map where the key is the energy source and the value is the average percentage
      */
-
     private Map<String, Double> calculateAverageMix(List<GenerationEntry> entries) {
-        int count = entries.size();
-
         return entries.stream()
                 .flatMap(e -> e.generationmix().stream())
                 .collect(Collectors.groupingBy(
                         GenerationEntry.FuelMix::fuel,
-                        Collectors.summingDouble(GenerationEntry.FuelMix::perc)
-                ))
-                .entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        e -> e.getValue() / count
+                        Collectors.averagingDouble(GenerationEntry.FuelMix::perc)
                 ));
     }
 
+    /**
+     * Calculates the total clean energy percentage from the average mix of energy sources.
+     * Clean energy sources are defined in the EnergySource enum.
+     *
+     * @param avgMix map of energy sources and their average percentages
+     * @return total clean energy percentage as a double
+     */
     private double calculateCleanEnergy(Map<String, Double> avgMix) {
         return avgMix.entrySet().stream()
                 .filter(e -> Arrays.stream(EnergySource.values())
@@ -198,6 +195,13 @@ public class GenerationService {
         );
     }
 
+    /**
+     * Returns a stream of clean energy fuel mixes from a single generation entry.
+     * Filters out only the fuels that are considered clean according to the EnergySource enum.
+     *
+     * @param entry a generation entry containing fuel mix information
+     * @return a Stream of FuelMix objects representing clean energy sources
+     */
     private Stream<GenerationEntry.FuelMix> cleanEnergyStream(GenerationEntry entry) {
         return entry.generationmix().stream()
                 .filter(f -> Arrays.stream(EnergySource.values())
