@@ -40,6 +40,8 @@ class GenerationServiceTest {
     @InjectMocks
     private GenerationService generationService;
 
+    private static final ZonedDateTime TEST_DAY_START = ZonedDateTime.parse("2025-01-01T00:00Z");
+
     @Test
     @DisplayName("Should find optimal charging window for 1-hour window")
     void findOptimalChargingWindow_for_1HourWindow() {
@@ -48,10 +50,8 @@ class GenerationServiceTest {
 
         when(carbonIntensityClient.getGenerationMix(anyString(), anyString()))
                 .thenReturn(mockResponse);
-        when(timeProvider.getStartOfDay()).thenReturn(
-                ZonedDateTime.parse("2025-01-01T00:00Z"));
-        when(timeProvider.getEndOfDay()).thenReturn(
-                ZonedDateTime.parse("2025-01-04T00:00Z"));
+        when(timeProvider.getStartOfDay()).thenReturn(TEST_DAY_START);
+        when(timeProvider.getEndOfDay()).thenReturn(TEST_DAY_START);
 
         // when
         OptimalChargingWindowResponse result = generationService.findOptimalChargingWindow(1);
@@ -75,10 +75,8 @@ class GenerationServiceTest {
         when(carbonIntensityClient.getGenerationMix(anyString(), anyString()))
                 .thenReturn(mockResponse);
 
-        when(timeProvider.getStartOfDay()).thenReturn(
-                ZonedDateTime.parse("2025-01-01T00:00Z"));
-        when(timeProvider.getEndOfDay()).thenReturn(
-                ZonedDateTime.parse("2025-01-04T00:00Z"));
+        when(timeProvider.getStartOfDay()).thenReturn(TEST_DAY_START);
+        when(timeProvider.getEndOfDay()).thenReturn(TEST_DAY_START);
 
         // when
         OptimalChargingWindowResponse result = generationService.findOptimalChargingWindow(3);
@@ -111,10 +109,8 @@ class GenerationServiceTest {
 
         when(carbonIntensityClient.getGenerationMix(anyString(), anyString()))
                 .thenReturn(resp);
-        when(timeProvider.getStartOfDay()).thenReturn(
-                ZonedDateTime.parse("2025-01-01T00:00Z"));
-        when(timeProvider.getEndOfDay()).thenReturn(
-                ZonedDateTime.parse("2025-01-04T00:00Z"));
+        when(timeProvider.getStartOfDay()).thenReturn(TEST_DAY_START);
+        when(timeProvider.getEndOfDay()).thenReturn(TEST_DAY_START);
 
         // when
         List<DailyGenerationResponse> result = generationService.getThreeDaysAverage();
@@ -145,10 +141,8 @@ class GenerationServiceTest {
         // given
         when(carbonIntensityClient.getGenerationMix(anyString(), anyString()))
                 .thenReturn(null);
-        when(timeProvider.getStartOfDay())
-                .thenReturn(ZonedDateTime.parse("2025-01-01T00:00Z"));
-        when(timeProvider.getEndOfDay())
-                .thenReturn(ZonedDateTime.parse("2025-01-02T00:00Z"));
+        when(timeProvider.getStartOfDay()).thenReturn(TEST_DAY_START);
+        when(timeProvider.getEndOfDay()).thenReturn(TEST_DAY_START);
 
         // when & then
         assertThatThrownBy(() -> generationService.getThreeDaysAverage())
@@ -166,10 +160,8 @@ class GenerationServiceTest {
         // given
         when(carbonIntensityClient.getGenerationMix(anyString(), anyString()))
                 .thenThrow(new RestClientException("API down"));
-        when(timeProvider.getStartOfDay())
-                .thenReturn(ZonedDateTime.parse("2025-01-01T00:00Z"));
-        when(timeProvider.getEndOfDay())
-                .thenReturn(ZonedDateTime.parse("2025-01-02T00:00Z"));
+        when(timeProvider.getStartOfDay()).thenReturn(TEST_DAY_START);
+        when(timeProvider.getEndOfDay()).thenReturn(TEST_DAY_START);
 
         // when & then
         assertThatThrownBy(() -> generationService.getThreeDaysAverage())
@@ -200,7 +192,7 @@ class GenerationServiceTest {
         GenerationEntry d3e3 = createEntry("2025-01-03T01:00Z", "2025-01-03T01:30Z",
                 0.0, 50.0, 0.0, 50.0, 0.0);
         GenerationEntry day4OutOfRange = createEntry("2025-01-04T00:00Z", "2025-01-04T00:30Z",
-                0.0, 11.0, 0.0, 11.0, 0.0);
+                0.0, 200.0, 0.0, 200.0, 0.0);
         GenerationEntry farFuture = createEntry("3000-01-01T00:00Z", "3000-01-01T01:00Z",
                 1111, 0.0, 0.0, 0.0, 0.0);
 
